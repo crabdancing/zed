@@ -11,6 +11,9 @@ pub fn init(cx: &mut App) {
 /// Zedless settings.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub struct ZedlessSettings {
+    #[serde(default)]
+    /// Zeta server URL.
+    pub zeta_url: Option<String>,
 }
 
 impl Settings for ZedlessSettings {

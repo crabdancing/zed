@@ -1,3 +1,4 @@
+# TODO(zedless-collab): Update for LiveKit removal
 {
   lib,
   rustPlatform,

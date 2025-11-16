@@ -2209,7 +2209,6 @@ dependencies = [
  "gpui_tokio",
  "http_client",
  "language",
- "livekit_client",
  "log",
  "postage",
  "project",

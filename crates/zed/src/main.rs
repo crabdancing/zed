@@ -309,7 +309,7 @@ pub fn main() {
         paths::keymap_file().clone(),
     );
 
-    let (shell_env_loaded_tx, shell_env_loaded_rx) = oneshot::channel();
+    let (shell_env_loaded_tx, _shell_env_loaded_rx) = oneshot::channel();
     if !stdout_is_a_pty() {
         app.background_executor()
             .spawn(async {

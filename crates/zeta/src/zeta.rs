@@ -2,31 +2,27 @@ mod completion_diff_element;
 mod init;
 mod input_excerpt;
 
-pub(crate) use completion_diff_element::*;
 use db::kvp::{Dismissable, KEY_VALUE_STORE};
 pub use init::*;
 
-use anyhow::{Context as _, Result, anyhow};
+use anyhow::{Context as _, Result};
 use arrayvec::ArrayVec;
 use client::{Client, EditPredictionUsage, UserStore};
-use collections::{HashMap, HashSet, VecDeque};
+use collections::{HashMap, VecDeque};
 use futures::AsyncReadExt;
 use gpui::{
     App, AppContext as _, AsyncApp, Context, Entity, EntityId, Global, SemanticVersion,
-    Subscription, Task, WeakEntity, actions,
+    Task, actions,
 };
-use http_client::{AsyncBody, HttpClient, Method, Request, Response};
+use http_client::{HttpClient, Method};
 use input_excerpt::excerpt_for_cursor_position;
 use language::{
-    Anchor, Buffer, BufferSnapshot, EditPreview, OffsetRangeExt, ToOffset, ToPoint, text_diff,
+    Anchor, Buffer, BufferSnapshot, EditPreview, OffsetRangeExt, ToPoint, text_diff,
 };
-use language_model::{LlmApiToken, RefreshLlmTokenListener};
-use postage::watch;
 use project::Project;
 use release_channel::AppVersion;
-use settings::{Settings, WorktreeId};
+use settings::Settings;
 use zedless_settings::ZedlessSettings;
-use std::str::FromStr;
 use std::{
     borrow::Cow,
     cmp,
@@ -35,19 +31,13 @@ use std::{
     mem,
     ops::Range,
     path::Path,
-    rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
-use thiserror::Error;
 use util::ResultExt;
 use uuid::Uuid;
-use workspace::Workspace;
-use workspace::notifications::{ErrorMessagePrompt, NotificationId};
-use worktree::Worktree;
 use zed_llm_client::{
-    AcceptEditPredictionBody, EXPIRED_LLM_TOKEN_HEADER_NAME, MINIMUM_REQUIRED_VERSION_HEADER_NAME,
-    PredictEditsBody, PredictEditsResponse, ZED_VERSION_HEADER_NAME,
+    EXPIRED_LLM_TOKEN_HEADER_NAME, PredictEditsBody, PredictEditsResponse, ZED_VERSION_HEADER_NAME,
 };
 
 const CURSOR_MARKER: &'static str = "<|user_cursor_is_here|>";
@@ -121,23 +111,12 @@ impl Global for ZetaGlobal {}
 pub struct InlineCompletion {
     id: InlineCompletionId,
     path: Arc<Path>,
-    excerpt_range: Range<usize>,
-    cursor_offset: usize,
     edits: Arc<[(Range<Anchor>, String)]>,
     snapshot: BufferSnapshot,
     edit_preview: EditPreview,
-    input_events: Arc<str>,
-    input_excerpt: Arc<str>,
-    request_sent_at: Instant,
-    response_received_at: Instant,
 }
 
 impl InlineCompletion {
-    fn latency(&self) -> Duration {
-        self.response_received_at
-            .duration_since(self.request_sent_at)
-    }
-
     fn interpolate(&self, new_snapshot: &BufferSnapshot) -> Option<Vec<(Range<Anchor>, String)>> {
         interpolate(&self.snapshot, new_snapshot, self.edits.clone())
     }
@@ -200,7 +179,6 @@ impl std::fmt::Debug for InlineCompletion {
 }
 
 pub struct Zeta {
-    workspace: Option<WeakEntity<Workspace>>,
     client: Arc<Client>,
     events: VecDeque<Event>,
     registered_buffers: HashMap<gpui::EntityId, RegisteredBuffer>,
@@ -214,14 +192,12 @@ impl Zeta {
     }
 
     pub fn register(
-        workspace: Option<WeakEntity<Workspace>>,
-        worktree: Option<Entity<Worktree>>,
         client: Arc<Client>,
         user_store: Entity<UserStore>,
         cx: &mut App,
     ) -> Entity<Self> {
         let this = Self::global(cx).unwrap_or_else(|| {
-            let entity = cx.new(|cx| Self::new(workspace, client, user_store, cx));
+            let entity = cx.new(|cx| Self::new(client, user_store, cx));
             cx.set_global(ZetaGlobal(entity.clone()));
             entity
         });
@@ -238,13 +214,11 @@ impl Zeta {
     }
 
     fn new(
-        workspace: Option<WeakEntity<Workspace>>,
         client: Arc<Client>,
         user_store: Entity<UserStore>,
-        cx: &mut Context<Self>,
+        _cx: &mut Context<Self>,
     ) -> Self {
         Self {
-            workspace,
             client,
             events: VecDeque::new(),
             shown_completions: VecDeque::new(),
@@ -320,7 +294,6 @@ impl Zeta {
 
     fn request_completion_impl<F, R>(
         &mut self,
-        workspace: Option<Entity<Workspace>>,
         project: Option<&Entity<Project>>,
         buffer: &Entity<Buffer>,
         cursor: language::Anchor,
@@ -336,7 +309,6 @@ impl Zeta {
         let snapshot = self.report_changes_for_buffer(&buffer, cx);
         let diagnostic_groups = snapshot.diagnostic_groups(None);
         let cursor_point = cursor.to_point(&snapshot);
-        let cursor_offset = cursor_point.to_offset(&snapshot);
         let events = self.events.clone();
         let path: Arc<Path> = snapshot
             .file()
@@ -373,8 +345,6 @@ impl Zeta {
 
         cx.spawn(async move |this, cx| {
             let server_url = server_url?;
-
-            let request_sent_at = Instant::now();
 
             struct BackgroundValues {
                 input_events: String,
@@ -464,11 +434,7 @@ impl Zeta {
                 buffer,
                 &snapshot,
                 values.editable_range,
-                cursor_offset,
                 path,
-                values.input_events,
-                values.input_excerpt,
-                request_sent_at,
                 &cx,
             )
             .await
@@ -631,7 +597,7 @@ and then another
     #[cfg(any(test, feature = "test-support"))]
     pub fn fake_completion(
         &mut self,
-        project: Option<&Entity<Project>>,
+        _project: Option<&Entity<Project>>,
         buffer: &Entity<Buffer>,
         position: language::Anchor,
         response: PredictEditsResponse,
@@ -639,7 +605,7 @@ and then another
     ) -> Task<Result<Option<InlineCompletion>>> {
         use std::future::ready;
 
-        self.request_completion_impl(None, project, buffer, position, cx, |_params| {
+        self.request_completion_impl(None, buffer, position, cx, |_params| {
             ready(Ok((response, None)))
         })
     }
@@ -651,12 +617,7 @@ and then another
         position: language::Anchor,
         cx: &mut Context<Self>,
     ) -> Task<Result<Option<InlineCompletion>>> {
-        let workspace = self
-            .workspace
-            .as_ref()
-            .and_then(|workspace| workspace.upgrade());
         self.request_completion_impl(
-            workspace,
             project,
             buffer,
             position,
@@ -722,11 +683,7 @@ and then another
         buffer: Entity<Buffer>,
         snapshot: &BufferSnapshot,
         editable_range: Range<usize>,
-        cursor_offset: usize,
         path: Arc<Path>,
-        input_events: String,
-        input_excerpt: String,
-        request_sent_at: Instant,
         cx: &AsyncApp,
     ) -> Task<Result<Option<InlineCompletion>>> {
         let snapshot = snapshot.clone();
@@ -763,15 +720,9 @@ and then another
             Ok(Some(InlineCompletion {
                 id: InlineCompletionId(request_id),
                 path,
-                excerpt_range: editable_range,
-                cursor_offset,
                 edits,
                 edit_preview,
                 snapshot,
-                input_events: input_events.into(),
-                input_excerpt: input_excerpt.into(),
-                request_sent_at,
-                response_received_at: Instant::now(),
             }))
         })
     }
@@ -871,9 +822,6 @@ and then another
 
     pub fn completion_shown(&mut self, completion: &InlineCompletion, cx: &mut Context<Self>) {
         self.shown_completions.push_front(completion.clone());
-        if self.shown_completions.len() > 50 {
-            let completion = self.shown_completions.pop_back().unwrap();
-        }
         cx.notify();
     }
 
@@ -1236,7 +1184,7 @@ impl inline_completion::EditPredictionProvider for ZetaInlineCompletionProvider 
         // Right now we don't support cycling.
     }
 
-    fn accept(&mut self, cx: &mut Context<Self>) {
+    fn accept(&mut self, _cx: &mut Context<Self>) {
         self.pending_completions.clear();
     }
 
@@ -1323,6 +1271,8 @@ mod tests {
     use language::Point;
     use rpc::proto;
     use settings::SettingsStore;
+    use language_model::RefreshLlmTokenListener;
+    use language::ToOffset;
 
     use super::*;
 
@@ -1348,12 +1298,6 @@ mod tests {
             path: Path::new("").into(),
             snapshot: cx.read(|cx| buffer.read(cx).snapshot()),
             id: InlineCompletionId(Uuid::new_v4()),
-            excerpt_range: 0..0,
-            cursor_offset: 0,
-            input_events: "".into(),
-            input_excerpt: "".into(),
-            request_sent_at: Instant::now(),
-            response_received_at: Instant::now(),
         };
 
         cx.update(|cx| {
@@ -1544,7 +1488,7 @@ mod tests {
         });
         let server = FakeServer::for_client(42, &client, cx).await;
         let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
-        let zeta = cx.new(|cx| Zeta::new(None, client, user_store, cx));
+        let zeta = cx.new(|cx| Zeta::new(client, user_store, cx));
 
         let buffer = cx.new(|cx| Buffer::local(buffer_content, cx));
         let cursor = buffer.read_with(cx, |buffer, _| buffer.anchor_before(Point::new(1, 0)));
@@ -1598,7 +1542,7 @@ mod tests {
         });
         let server = FakeServer::for_client(42, &client, cx).await;
         let user_store = cx.new(|cx| UserStore::new(client.clone(), cx));
-        let zeta = cx.new(|cx| Zeta::new(None, client, user_store, cx));
+        let zeta = cx.new(|cx| Zeta::new(client, user_store, cx));
 
         let buffer = cx.new(|cx| Buffer::local(buffer_content, cx));
         let snapshot = buffer.read_with(cx, |buffer, _| buffer.snapshot());

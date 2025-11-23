@@ -14,7 +14,6 @@ use assistant_tool::{ActionLog, AnyToolCard, Tool, ToolWorkingSet};
 use chrono::{DateTime, Utc};
 use client::{ModelRequestUsage, RequestUsage};
 use collections::HashMap;
-use feature_flags::{self, FeatureFlagAppExt};
 use futures::{FutureExt, StreamExt as _, future::Shared};
 use git::repository::DiffType;
 use gpui::{
@@ -380,7 +379,6 @@ pub struct Thread {
     exceeded_window_error: Option<ExceededWindowError>,
     tool_use_limit_reached: bool,
     retry_state: Option<RetryState>,
-    last_auto_capture_at: Option<Instant>,
     last_received_chunk_at: Option<Instant>,
     request_callback: Option<
         Box<dyn FnMut(&LanguageModelRequest, &[Result<LanguageModelCompletionEvent, String>])>,
@@ -479,7 +477,7 @@ impl Thread {
             exceeded_window_error: None,
             tool_use_limit_reached: false,
             retry_state: None,
-            last_auto_capture_at: None,
+
             last_error_context: None,
             last_received_chunk_at: None,
             request_callback: None,
@@ -602,7 +600,6 @@ impl Thread {
             cumulative_token_usage: serialized.cumulative_token_usage,
             exceeded_window_error: None,
             tool_use_limit_reached: serialized.tool_use_limit_reached,
-            last_auto_capture_at: None,
             last_error_context: None,
             last_received_chunk_at: None,
             request_callback: None,

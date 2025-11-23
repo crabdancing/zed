@@ -777,10 +777,6 @@ impl WasmState {
         async move { return_rx.await.expect("main thread message channel") }
     }
 
-    fn work_dir(&self) -> PathBuf {
-        self.host.work_dir.join(self.manifest.id.as_ref())
-    }
-
     fn extension_error(&self, message: String) -> anyhow::Error {
         anyhow!(
             "from extension \"{}\" version {}: {}",

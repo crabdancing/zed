@@ -472,24 +472,24 @@ impl remote::SshClientDelegate for SshClientDelegate {
 
     fn download_server_binary_locally(
         &self,
-        platform: SshPlatform,
-        release_channel: ReleaseChannel,
-        version: Option<SemanticVersion>,
+        _platform: SshPlatform,
+        _release_channel: ReleaseChannel,
+        _version: Option<SemanticVersion>,
         cx: &mut AsyncApp,
     ) -> Task<anyhow::Result<PathBuf>> {
-        cx.spawn(async move |cx| {
+        cx.spawn(async move |_cx| {
             Err(anyhow::anyhow!("zedless: downloads are disabled"))
         })
     }
 
     fn get_download_params(
         &self,
-        platform: SshPlatform,
-        release_channel: ReleaseChannel,
-        version: Option<SemanticVersion>,
+        _platform: SshPlatform,
+        _release_channel: ReleaseChannel,
+        _version: Option<SemanticVersion>,
         cx: &mut AsyncApp,
     ) -> Task<Result<Option<(String, String)>>> {
-        cx.spawn(async move |cx| {
+        cx.spawn(async move |_cx| {
             Ok(None)
         })
     }

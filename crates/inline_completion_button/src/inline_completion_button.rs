@@ -5,7 +5,6 @@ use editor::{
     actions::{ShowEditPrediction, ToggleEditPrediction},
     scroll::Autoscroll,
 };
-use feature_flags::{FeatureFlagAppExt, PredictEditsRateCompletionsFeatureFlag};
 use fs::Fs;
 use gpui::{
     Action, Animation, AnimationExt, App, AsyncWindowContext, Corner, Entity, FocusHandle,
@@ -564,14 +563,6 @@ fn toggle_inline_completions_globally(fs: Arc<dyn Fs>, cx: &mut App) {
     let show_edit_predictions = all_language_settings(None, cx).show_edit_predictions(None, cx);
     update_settings_file::<AllLanguageSettings>(fs, cx, move |file, _| {
         file.defaults.show_edit_predictions = Some(!show_edit_predictions)
-    });
-}
-
-fn set_completion_provider(fs: Arc<dyn Fs>, cx: &mut App, provider: EditPredictionProvider) {
-    update_settings_file::<AllLanguageSettings>(fs, cx, move |file, _| {
-        file.features
-            .get_or_insert(Default::default())
-            .edit_prediction_provider = Some(provider);
     });
 }
 

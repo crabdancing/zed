@@ -4306,13 +4306,9 @@ impl LspStore {
             }
         });
 
-        let settings =
-            language_settings(Some(new_language.name()), buffer_file.as_ref(), cx).into_owned();
         let buffer_file = File::from_dyn(buffer_file.as_ref());
 
-        let worktree_id = if let Some(file) = buffer_file {
-            let worktree = file.worktree.clone();
-
+        if buffer_file.is_some() {
             if let Some(local) = self.as_local_mut() {
                 if local.registered_buffers.contains_key(&buffer_id) {
                     local.register_buffer_with_language_servers(
@@ -4322,10 +4318,7 @@ impl LspStore {
                     );
                 }
             }
-            Some(worktree.read(cx).id())
-        } else {
-            None
-        };
+        }
 
         cx.emit(LspStoreEvent::LanguageDetected {
             buffer: buffer_entity.clone(),
@@ -10836,32 +10829,6 @@ impl LspStore {
                 ),
             });
             cx.background_spawn(request).detach_and_log_err(cx);
-        }
-    }
-
-    fn register_supplementary_language_server(
-        &mut self,
-        id: LanguageServerId,
-        name: LanguageServerName,
-        server: Arc<LanguageServer>,
-        cx: &mut Context<Self>,
-    ) {
-        if let Some(local) = self.as_local_mut() {
-            local
-                .supplementary_language_servers
-                .insert(id, (name.clone(), server));
-            cx.emit(LspStoreEvent::LanguageServerAdded(id, name, None));
-        }
-    }
-
-    fn unregister_supplementary_language_server(
-        &mut self,
-        id: LanguageServerId,
-        cx: &mut Context<Self>,
-    ) {
-        if let Some(local) = self.as_local_mut() {
-            local.supplementary_language_servers.remove(&id);
-            cx.emit(LspStoreEvent::LanguageServerRemoved(id));
         }
     }
 

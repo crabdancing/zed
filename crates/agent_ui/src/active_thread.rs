@@ -56,7 +56,6 @@ use zed_llm_client::CompletionIntent;
 
 const CODEBLOCK_CONTAINER_GROUP: &str = "codeblock_container";
 const EDIT_PREVIOUS_MESSAGE_MIN_LINES: usize = 1;
-const RESPONSE_PADDING_X: Pixels = px(19.);
 
 pub struct ActiveThread {
     context_store: Entity<ContextStore>,

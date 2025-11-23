@@ -215,7 +215,7 @@ in
         ln -s $out/Applications/Zed.app/Contents/MacOS/cli $out/bin/zeditor
       ''
       + lib.optionalString stdenv.hostPlatform.isLinux ''
-        install -Dm755 $release_target/zed $out/libexec/zed-editor
+        install -Dm755 $release_target/zed $out/libexec/zedless-editor
         install -Dm755 $release_target/cli $out/bin/zedless
         ln -s $out/bin/zedless $out/bin/zed
         ln -s $out/bin/zedless $out/bin/zeditor

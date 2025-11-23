@@ -41,5 +41,15 @@
       herculesCI.ciSystems = [
         "x86_64-linux"
       ];
+
+      checks = forAllSystems (
+        pkgs:
+        let
+          formatting = pkgs.callPackage ./nix/checks/formatting.nix { };
+        in
+        {
+          inherit (formatting) format-nix;
+        }
+      );
     };
 }

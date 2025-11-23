@@ -36,6 +36,17 @@
           "RUST_DEFAULT_PACKAGE_RUN": "zed"
         }
       }
+    },
+    "Nix": {
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "nixfmt",
+          "arguments": [
+            "--filename={buffer_path}"
+          ]
+        }
+      }
     }
   },
   "file_types": {

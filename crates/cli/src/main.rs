@@ -424,10 +424,10 @@ mod linux {
                 let cli = env::current_exe()?;
                 let dir = cli.parent().context("no parent path for cli")?;
 
-                // libexec is the standard, lib/zed is for Arch (and other non-libexec distros),
+                // libexec is the standard, lib/zedless is for Arch (and other non-libexec distros),
                 // ./zed is for the target directory in development builds.
                 let possible_locations =
-                    ["../libexec/zedless-editor", "../lib/zed/zedless-editor", "./zed"];
+                    ["../libexec/zedless-editor", "../lib/zedless/zedless-editor", "./zed"];
                 possible_locations
                     .iter()
                     .find_map(|p| dir.join(p).canonicalize().ok().filter(|path| path != &cli))

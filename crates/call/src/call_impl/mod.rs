@@ -24,7 +24,7 @@ pub use room::Room;
 pub struct RemoteVideoTrackView;
 impl RemoteVideoTrackView {
     pub fn clone(&self, cx: &mut Context<Self>) -> Entity<Self> {
-        cx.new(|cx| Self)
+        cx.new(|_cx| Self)
     }
 }
 impl EventEmitter<RemoteVideoTrackViewEvent> for RemoteVideoTrackView {}

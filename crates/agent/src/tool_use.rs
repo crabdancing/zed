@@ -12,7 +12,7 @@ use futures::{FutureExt as _, future::Shared};
 use gpui::{App, Entity, SharedString, Task, Window};
 use icons::IconName;
 use language_model::{
-    ConfiguredModel, LanguageModel, LanguageModelExt, LanguageModelRequest,
+    ConfiguredModel, LanguageModelExt, LanguageModelRequest,
     LanguageModelToolResult, LanguageModelToolResultContent, LanguageModelToolUse,
     LanguageModelToolUseId, Role,
 };

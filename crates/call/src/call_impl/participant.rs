@@ -1,6 +1,5 @@
 use anyhow::{Context as _, Result};
 use client::{ParticipantIndex, User, proto};
-use collections::HashMap;
 use gpui::WeakEntity;
 use project::Project;
 use std::sync::Arc;

@@ -8,7 +8,6 @@ use smol::stream::StreamExt;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use ui::Window;
 use util::ResultExt;
-use workspace::Workspace;
 use zeta::{ZetaInlineCompletionProvider};
 
 pub fn init(client: Arc<Client>, user_store: Entity<UserStore>, cx: &mut App) {
@@ -170,28 +169,8 @@ fn assign_edit_prediction_provider(
             editor.set_edit_prediction_provider::<ZetaInlineCompletionProvider>(None, window, cx);
         }
         EditPredictionProvider::Zed => {
-            let mut worktree = None;
-
-            if let Some(buffer) = &singleton_buffer {
-                if let Some(file) = buffer.read(cx).file() {
-                    let id = file.worktree_id(cx);
-                    if let Some(inner_worktree) = editor
-                        .project
-                        .as_ref()
-                        .and_then(|project| project.read(cx).worktree_for_id(id, cx))
-                    {
-                        worktree = Some(inner_worktree);
-                    }
-                }
-            }
-
-            let workspace = window
-                .root::<Workspace>()
-                .flatten()
-                .map(|workspace| workspace.downgrade());
-
             let zeta =
-                zeta::Zeta::register(workspace, worktree, client.clone(), user_store, cx);
+                zeta::Zeta::register(client.clone(), user_store, cx);
 
             if let Some(buffer) = &singleton_buffer {
                 if buffer.read(cx).file().is_some() {

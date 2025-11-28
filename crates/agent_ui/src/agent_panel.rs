@@ -549,7 +549,6 @@ impl AgentPanel {
         let user_store = workspace.app_state().user_store.clone();
         let project = workspace.project();
         let language_registry = project.read(cx).languages().clone();
-        let client = workspace.client().clone();
         let workspace = workspace.weak_handle();
         let weak_self = cx.entity().downgrade();
 
@@ -578,7 +577,6 @@ impl AgentPanel {
                 prompt_store.clone(),
                 thread_store.downgrade(),
                 context_store.downgrade(),
-                Some(history_store.downgrade()),
                 thread.clone(),
                 window,
                 cx,
@@ -835,7 +833,6 @@ impl AgentPanel {
                 self.prompt_store.clone(),
                 self.thread_store.downgrade(),
                 self.context_store.downgrade(),
-                Some(self.history_store.downgrade()),
                 thread.clone(),
                 window,
                 cx,
@@ -1109,7 +1106,6 @@ impl AgentPanel {
                 self.prompt_store.clone(),
                 self.thread_store.downgrade(),
                 self.context_store.downgrade(),
-                Some(self.history_store.downgrade()),
                 thread.clone(),
                 window,
                 cx,

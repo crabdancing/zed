@@ -13,15 +13,14 @@ use fs::Fs;
 use futures::{FutureExt, StreamExt};
 use gpui::{
     App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, ScreenCaptureSource,
-    ScreenCaptureStream, Task, WeakEntity,
+    Task, WeakEntity,
 };
-use gpui_tokio::Tokio;
 use language::LanguageRegistry;
 use postage::{sink::Sink, stream::Stream, watch};
 use project::Project;
 use settings::Settings as _;
 use std::{future::Future, mem, rc::Rc, sync::Arc, time::Duration};
-use util::{ResultExt, TryFutureExt, post_inc};
+use util::{ResultExt, TryFutureExt};
 
 pub const RECONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -1110,7 +1109,7 @@ impl Room {
     }
 
     #[track_caller]
-    pub fn share_microphone(&mut self, cx: &mut Context<Self>) -> Task<Result<()>> {
+    pub fn share_microphone(&mut self, _cx: &mut Context<Self>) -> Task<Result<()>> {
         if self.status.is_offline() {
             return Task::ready(Err(anyhow!("room is offline")));
         }
@@ -1122,8 +1121,8 @@ impl Room {
 
     pub fn share_screen(
         &mut self,
-        source: Rc<dyn ScreenCaptureSource>,
-        cx: &mut Context<Self>,
+        _source: Rc<dyn ScreenCaptureSource>,
+        _cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
         if self.status.is_offline() {
             return Task::ready(Err(anyhow!("room is offline")));
@@ -1137,17 +1136,17 @@ impl Room {
         return Task::ready(Ok(()));
     }
 
-    pub fn toggle_mute(&mut self, cx: &mut Context<Self>) {
+    pub fn toggle_mute(&mut self, _cx: &mut Context<Self>) {
         // TODO(zedless-collab): Re-implement
         log::error!("toggle_mute() has not yet been re-implemented");
     }
 
-    pub fn toggle_deafen(&mut self, cx: &mut Context<Self>) {
+    pub fn toggle_deafen(&mut self, _cx: &mut Context<Self>) {
         // TODO(zedless-collab): Re-implement
         log::error!("toggle_deafen() has not yet been re-implemented");
     }
 
-    pub fn unshare_screen(&mut self, play_sound: bool, cx: &mut Context<Self>) -> Result<()> {
+    pub fn unshare_screen(&mut self, _play_sound: bool, _cx: &mut Context<Self>) -> Result<()> {
         anyhow::ensure!(!self.status.is_offline(), "room is offline");
 
         // TODO(zedless-collab): Re-implement

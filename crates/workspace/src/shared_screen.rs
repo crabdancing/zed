@@ -25,22 +25,22 @@ pub struct SharedScreen {
 
 impl SharedScreen {
     pub fn new(
-        track: u8, // TODO(zedless-collab): Re-implement track type or delete parameter
+        _track: u8, // TODO(zedless-collab): Re-implement track type or delete parameter
         peer_id: PeerId,
         user: Arc<User>,
         room: Entity<Room>,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        cx.subscribe(&room, move |_, _, ev, cx| match ev {
-            call::room::Event::RemoteVideoTrackUnsubscribed { track_id } => {
+        cx.subscribe(&room, move |_, _, ev, _cx| match ev {
+            call::room::Event::RemoteVideoTrackUnsubscribed { track_id: _ } => {
                 // TODO(zedless-collab): Emit close event if `track_id` matches `track` (impl TBD)
             }
             _ => {}
         })
         .detach();
 
-        let view = cx.new(|cx| RemoteVideoTrackView);
+        let view = cx.new(|_cx| RemoteVideoTrackView);
         cx.subscribe(&view, |_, _, ev, cx| match ev {
             call::RemoteVideoTrackViewEvent::Close => cx.emit(Event::Close),
         })
@@ -107,7 +107,7 @@ impl Item for SharedScreen {
     fn clone_on_split(
         &self,
         _workspace_id: Option<WorkspaceId>,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<Entity<Self>> {
         Some(cx.new(|cx| Self {

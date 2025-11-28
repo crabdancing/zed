@@ -2,7 +2,6 @@ use anyhow::{Result};
 use async_trait::async_trait;
 use collections::HashMap;
 use dap::DapRegistry;
-use futures::StreamExt;
 use gpui::{App, AsyncApp, Task};
 use language::{
     ContextProvider, LanguageRegistry, LanguageToolchainStore, LocalFile as _, LspAdapter,

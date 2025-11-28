@@ -9,7 +9,6 @@ use crate::ui::{
     MaxModeTooltip,
     preview::{AgentPreview, UsageCallout},
 };
-use agent::history_store::HistoryStore;
 use agent::{
     context::{AgentContextKey, ContextLoadResult, load_context},
     context_store::ContextStoreEvent,
@@ -35,7 +34,7 @@ use gpui::{
 };
 use language::{Buffer, Language, Point};
 use language_model::{
-    ConfiguredModel, LanguageModelRegistry, LanguageModelRequestMessage, MessageContent,
+    ConfiguredModel, LanguageModelRequestMessage, MessageContent,
     ZED_CLOUD_PROVIDER_ID,
 };
 use multi_buffer;
@@ -81,7 +80,6 @@ pub struct MessageEditor {
     user_store: Entity<UserStore>,
     context_store: Entity<ContextStore>,
     prompt_store: Option<Entity<PromptStore>>,
-    history_store: Option<WeakEntity<HistoryStore>>,
     context_strip: Entity<ContextStrip>,
     context_picker_menu_handle: PopoverMenuHandle<ContextPicker>,
     model_selector: Entity<AgentModelSelector>,
@@ -163,7 +161,6 @@ impl MessageEditor {
         prompt_store: Option<Entity<PromptStore>>,
         thread_store: WeakEntity<ThreadStore>,
         text_thread_store: WeakEntity<TextThreadStore>,
-        history_store: Option<WeakEntity<HistoryStore>>,
         thread: Entity<Thread>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -236,7 +233,6 @@ impl MessageEditor {
             workspace,
             context_store,
             prompt_store,
-            history_store,
             context_strip,
             context_picker_menu_handle,
             load_context_task: None,
@@ -1661,31 +1657,6 @@ impl Render for MessageEditor {
 
         let line_height = TextSize::Small.rems(cx).to_pixels(window.rem_size()) * 1.5;
 
-        let has_configured_providers = LanguageModelRegistry::read_global(cx)
-            .providers()
-            .iter()
-            .filter(|provider| {
-                provider.is_authenticated(cx) && provider.id() != ZED_CLOUD_PROVIDER_ID
-            })
-            .count()
-            > 0;
-
-        let is_signed_out = self
-            .workspace
-            .read_with(cx, |workspace, _| {
-                workspace.client().status().borrow().is_signed_out()
-            })
-            .unwrap_or(true);
-
-        let has_history = self
-            .history_store
-            .as_ref()
-            .and_then(|hs| hs.update(cx, |hs, cx| hs.entries(cx).len() > 0).ok())
-            .unwrap_or(false)
-            || self
-                .thread
-                .read_with(cx, |thread, _| thread.messages().len() > 0);
-
         v_flex()
             .size_full()
             .bg(cx.theme().colors().panel_background)
@@ -1778,7 +1749,6 @@ impl AgentPreview for MessageEditor {
                     None,
                     thread_store.downgrade(),
                     text_thread_store.downgrade(),
-                    None,
                     thread,
                     window,
                     cx,

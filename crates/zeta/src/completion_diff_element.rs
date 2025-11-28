@@ -1,13 +1,8 @@
 use std::cmp;
 
-use crate::InlineCompletion;
 use gpui::{
-    AnyElement, App, BorderStyle, Bounds, Corners, Edges, HighlightStyle, Hsla, StyledText,
-    TextLayout, TextStyle, point, prelude::*, quad, size,
+    AnyElement, App, BorderStyle, Bounds, Corners, Edges, Hsla, TextLayout, point, prelude::*, quad, size,
 };
-use language::OffsetRangeExt;
-use settings::Settings;
-use theme::ThemeSettings;
 use ui::prelude::*;
 
 pub struct CompletionDiffElement {
@@ -17,76 +12,6 @@ pub struct CompletionDiffElement {
 }
 
 impl CompletionDiffElement {
-    pub fn new(completion: &InlineCompletion, cx: &App) -> Self {
-        let mut diff = completion
-            .snapshot
-            .text_for_range(completion.excerpt_range.clone())
-            .collect::<String>();
-
-        let mut cursor_offset_in_diff = None;
-        let mut delta = 0;
-        let mut diff_highlights = Vec::new();
-        for (old_range, new_text) in completion.edits.iter() {
-            let old_range = old_range.to_offset(&completion.snapshot);
-
-            if cursor_offset_in_diff.is_none() && completion.cursor_offset <= old_range.end {
-                cursor_offset_in_diff =
-                    Some(completion.cursor_offset - completion.excerpt_range.start + delta);
-            }
-
-            let old_start_in_diff = old_range.start - completion.excerpt_range.start + delta;
-            let old_end_in_diff = old_range.end - completion.excerpt_range.start + delta;
-            if old_start_in_diff < old_end_in_diff {
-                diff_highlights.push((
-                    old_start_in_diff..old_end_in_diff,
-                    HighlightStyle {
-                        background_color: Some(cx.theme().status().deleted_background),
-                        strikethrough: Some(gpui::StrikethroughStyle {
-                            thickness: px(1.),
-                            color: Some(cx.theme().colors().text_muted),
-                        }),
-                        ..Default::default()
-                    },
-                ));
-            }
-
-            if !new_text.is_empty() {
-                diff.insert_str(old_end_in_diff, new_text);
-                diff_highlights.push((
-                    old_end_in_diff..old_end_in_diff + new_text.len(),
-                    HighlightStyle {
-                        background_color: Some(cx.theme().status().created_background),
-                        ..Default::default()
-                    },
-                ));
-                delta += new_text.len();
-            }
-        }
-
-        let cursor_offset_in_diff = cursor_offset_in_diff
-            .unwrap_or_else(|| completion.cursor_offset - completion.excerpt_range.start + delta);
-
-        let settings = ThemeSettings::get_global(cx).clone();
-        let text_style = TextStyle {
-            color: cx.theme().colors().editor_foreground,
-            font_size: settings.buffer_font_size(cx).into(),
-            font_family: settings.buffer_font.family,
-            font_features: settings.buffer_font.features,
-            font_fallbacks: settings.buffer_font.fallbacks,
-            line_height: relative(settings.buffer_line_height.value()),
-            font_weight: settings.buffer_font.weight,
-            font_style: settings.buffer_font.style,
-            ..Default::default()
-        };
-        let element = StyledText::new(diff).with_default_highlights(&text_style, diff_highlights);
-        let text_layout = element.layout().clone();
-
-        CompletionDiffElement {
-            element: element.into_any_element(),
-            text_layout,
-            cursor_offset: cursor_offset_in_diff,
-        }
-    }
 }
 
 impl IntoElement for CompletionDiffElement {

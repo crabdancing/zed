@@ -807,7 +807,7 @@ impl JsonSchema for SelectedFormatter {
                 },
                 {
                     "type": "string",
-                    "enum": ["auto", "language_server"]
+                    "enum": ["auto", "prettier", "language_server"]
                 },
                 formatter_schema
             ]
@@ -845,6 +845,8 @@ impl<'de> Deserialize<'de> for SelectedFormatter {
                 E: serde::de::Error,
             {
                 if v == "auto" {
+                    Ok(Self::Value::Auto)
+                } else if v == "prettier" { // fallback for deprecated setting
                     Ok(Self::Value::Auto)
                 } else if v == "language_server" {
                     Ok(Self::Value::List(FormatterList::Single(

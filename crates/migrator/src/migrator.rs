@@ -164,6 +164,10 @@ pub fn migrate_settings(text: &str) -> Result<Option<String>> {
             migrations::m_2025_07_08::SETTINGS_PATTERNS,
             &SETTINGS_QUERY_2025_07_08,
         ),
+        (
+            migrations::m_2025_11_29_zedless::SETTINGS_PATTERNS,
+            &SETTINGS_QUERY_2025_11_29_ZEDLESS,
+        ),
     ];
     run_migrations(text, migrations)
 }
@@ -277,6 +281,10 @@ define_query!(
 define_query!(
     SETTINGS_QUERY_2025_07_08,
     migrations::m_2025_07_08::SETTINGS_PATTERNS
+);
+define_query!(
+    SETTINGS_QUERY_2025_11_29_ZEDLESS,
+    migrations::m_2025_11_29_zedless::SETTINGS_PATTERNS
 );
 
 // custom query

@@ -8,35 +8,48 @@
     flake-compat.url = "github:edolstra/flake-compat";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
-    systems = [
-      "x86_64-linux"
-      "x86_64-darwin"
-      "aarch64-linux"
-      "aarch64-darwin"
-    ];
+  outputs =
+    {
+      self,
+      nixpkgs,
+      ...
+    }:
+    let
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
 
-    forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
-  in {
-    packages = forAllSystems (pkgs: {
-      zedless = pkgs.callPackage ./nix/package.nix {};
-      default = self.packages.${pkgs.stdenv.system}.zedless;
-    });
+      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+    in
+    {
+      packages = forAllSystems (pkgs: {
+        zedless = pkgs.callPackage ./nix/package.nix { };
+        default = self.packages.${pkgs.stdenv.system}.zedless;
+      });
 
-    devShells = forAllSystems (pkgs: {
-      default = pkgs.callPackage ./nix/shell.nix {
-        inherit (self.packages.${pkgs.stdenv.system}) zedless;
-      };
-    });
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.callPackage ./nix/shell.nix {
+          inherit (self.packages.${pkgs.stdenv.system}) zedless;
+        };
+      });
 
-    formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
-    
-    herculesCI.ciSystems = [
-      "x86_64-linux"
-    ];
-  };
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
+
+      herculesCI.ciSystems = [
+        "x86_64-linux"
+      ];
+
+      checks = forAllSystems (
+        pkgs:
+        let
+          formatting = pkgs.callPackage ./nix/checks/formatting.nix { };
+        in
+        {
+          inherit (formatting) format-nix;
+        }
+      );
+    };
 }

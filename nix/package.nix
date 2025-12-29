@@ -69,6 +69,10 @@ rustPlatform.buildRustPackage {
 
   postPatch = ''
     echo stable > crates/zed/RELEASE_CHANNEL
+    # The generate-licenses script wants a specific version of cargo-about eventhough
+    # newer versions work just as well.
+    substituteInPlace script/generate-licenses \
+      --replace-fail '$CARGO_ABOUT_VERSION' '${cargo-about.version}'
   '';
 
   cargoDeps = rustPlatform.importCargoLock {
